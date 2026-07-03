@@ -1,6 +1,6 @@
 from pathlib import Path
-import hashlib
 
+from graph_policy_rag.common.hashing import make_hash
 from graph_policy_rag.domain.document import Document
 from graph_policy_rag.exceptions import DataDirectoryNotFoundError
 
@@ -25,8 +25,8 @@ class FileSystemDocumentLoader:
             content = md_file.read_text(encoding="utf-8")
             relative_path = md_file.relative_to(self.documents_dir)
 
-            document_id = _make_hash(str(relative_path))
-            version = _make_hash(content)
+            document_id = make_hash(str(relative_path))
+            version = make_hash(content)
 
             documents.append(
                 Document(
@@ -40,7 +40,3 @@ class FileSystemDocumentLoader:
             )
 
         return documents
-
-
-def _make_hash(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()

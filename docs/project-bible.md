@@ -1,9 +1,6 @@
-# graph-policy-rag Project Bible
-
 # Project Scope
 
 Build a production-style GraphRAG platform for marketplace policy retrieval.
-The goal is to learn architecture, not to build a demo.
 
 ---
 
@@ -51,7 +48,10 @@ Use `uv` for project and dependency management.
 
 `uv` provides reproducible environments, dependency management and lockfiles.
 
----
+## Learnings
+
+- `uv init` and `uv init .` both work.
+- A contract is an agreement between system components about exchanged data.
 
 ## Questions
 
@@ -76,6 +76,8 @@ Document identity and document version are different concepts.
 
 A document should keep the same identity when its content changes, while the version should change whenever the content changes.
 
+---
+
 ### Decision 6
 
 FileSystemDocumentLoader is responsible for loading documents from the file system.
@@ -84,20 +86,80 @@ FileSystemDocumentLoader is responsible for loading documents from the file syst
 
 The loader knows where documents come from, but not how they are used later.
 
----
-
 ## Learnings
 
-- `tmp_path` creates an isolated temporary directory for each test.
 - Unit tests should verify behavior through the public API, not private implementation details.
-
----
+- `tmp_path` creates an isolated temporary directory for each test.
+- Domain entities represent business concepts rather than implementation details.
 
 ## Questions
 
 - Why is `Document` a domain entity?
-- Why shouldn't `Chunk` contain the whole `Document`?
 - Why is hashing the document content a poor choice for the document `id`?
+
+---
+
+# Day 3 — Chunking
+
+## Decisions
+
+### Decision 7
+
+`Chunk` stores `document_id`, not the full `Document`.
+
+**Why**
+
+A chunk is a retrieval unit, but it must remain linked to its source document without duplicating the whole document.
+
+---
+
+### Decision 8
+
+`TextChunker` lives in `chunking`, not in `domain` or `ingestion`.
+
+**Why**
+
+Chunking transforms `Document` domain objects into `Chunk` domain objects and is independent of the document source.
+
+---
+
+### Decision 9
+
+Initial chunking is word-based using `str.split()`.
+
+**Why**
+
+It keeps the first implementation simple and dependency-free. Token-based chunking can be introduced later when model-specific limits become important.
+
+---
+
+### Decision 10
+
+Shared hashing logic lives in `common/hashing.py`.
+
+**Why**
+
+Hashing is reused by multiple components. Extracting it into a focused module avoids duplication without introducing a generic `utils.py`.
+
+### Decision 11
+
+`TextChunker` keeps the final partial chunk.
+
+**Why**
+
+Policy documents may contain important information at the end. Losing content is worse than producing a shorter chunk.
+
+## Learnings
+
+- An invariant is a condition that must always hold true for a model or algorithm to work correctly.
+- `step = chunk_size_words - overlap_words`.
+- Overlap preserves context between neighboring chunks.
+
+## Questions
+
+- Why can't we embed the whole document as one vector?
+- Why does `Chunk` need `index`?
+- Is `source_uri` a property of `Chunk` or a denormalized copy from `Document`?
 
 ---
 
@@ -108,14 +170,6 @@ The loader knows where documents come from, but not how they are used later.
 - Prefer team conventions when multiple solutions are correct.
 - Evolve models instead of trying to design perfect ones from the beginning.
 - Avoid generic `utils.py`; start with local private helpers and extract them only when reuse appears.
-
----
-
-# Learnings
-
-- `uv init` and `uv init .` both work.
-- A contract is an agreement between system components about exchanged data.
-- Domain entities represent business concepts rather than implementation details.
 
 ---
 
@@ -132,3 +186,15 @@ An agreement between system components describing the structure of exchanged dat
 ## Domain Entity
 
 An object that represents a business concept and is independent of frameworks, storage and transport.
+
+## Domain
+
+Core concepts from the problem space.
+
+## Application
+
+Use cases and workflows that coordinate domain objects.
+
+## Infrastructure
+
+Technical details such as frameworks, databases, file systems, APIs and external services.

@@ -8,3 +8,4 @@ class Chunk:
     text: str
     source_uri: str
     index: int
+    version: str

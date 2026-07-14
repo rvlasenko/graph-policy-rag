@@ -21,21 +21,23 @@ class TextChunker:
             return []
 
         step = self.chunk_size_words - self.overlap_words
-        start = 0
         chunks: list[Chunk] = []
 
         for index, start in enumerate(range(0, len(words), step)):
             end = start + self.chunk_size_words
             chunk_words = words[start:end]
             chunk_id = make_hash(document.id + ":" + str(index))
+            chunk_text = " ".join(chunk_words)
+            chunk_version = make_hash(chunk_text)
 
             chunks.append(
                 Chunk(
                     id=chunk_id,
                     document_id=document.id,
-                    text=" ".join(chunk_words),
+                    text=chunk_text,
                     source_uri=document.source_uri,
                     index=index,
+                    version=chunk_version,
                 )
             )
 

@@ -104,3 +104,28 @@ def test_chunk_id_is_stable():
     second_chunks = chunker.chunk(document)
 
     assert [chunk.id for chunk in first_chunks] == [chunk.id for chunk in second_chunks]
+
+
+def test_changes_chunk_version_when_text_changes():
+    first_document = Document(
+        id="doc-1",
+        title="Policy",
+        content="one two three",
+        source_uri="file://policy.md",
+        metadata={},
+    )
+    second_document = Document(
+        id="doc-1",
+        title="Policy",
+        content="one changed three",
+        source_uri="file://policy.md",
+        metadata={},
+    )
+
+    chunker = TextChunker(chunk_size_words=3, overlap_words=1)
+
+    first_chunks = chunker.chunk(first_document)
+    second_chunks = chunker.chunk(second_document)
+
+    assert first_chunks[0].id == second_chunks[0].id
+    assert first_chunks[0].version != second_chunks[0].version

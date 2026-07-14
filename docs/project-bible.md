@@ -163,6 +163,76 @@ Policy documents may contain important information at the end. Losing content is
 
 ---
 
+# Day 4 — Embeddings
+
+## Decisions
+
+### Decision 12
+
+`Chunk` has a version generated from its text.
+
+**Why**
+
+Chunk identity represents its position within a document, while its version changes when the text at that position changes. This allows stale embeddings to be detected.
+
+---
+
+### Decision 13
+
+`ChunkEmbedding` is a separate domain model.
+
+**Why**
+
+An embedding has its own lifecycle and metadata and should not be stored directly inside `Chunk`.
+
+---
+
+### Decision 14
+
+`ChunkEmbedding` stores `chunk_id`, `chunk_version`, `vector`, and `model`.
+
+**Why**
+
+This links the vector to its source chunk, allows stale embeddings to be detected, and identifies the embedding space in which the vector was created.
+
+---
+
+### Decision 15
+
+Embedding processes chunks in batches and preserves their order.
+
+**Why**
+
+Embedding models can process multiple texts more efficiently than repeated single-item calls. Preserving order keeps each result aligned with its source chunk.
+
+---
+
+### Decision 16
+
+Sentence Transformers is the first embedding model implementation.
+
+**Why**
+
+It provides local batch inference without coupling the application to a paid external API. The implementation adapts the library output to the internal `EmbeddingModel` contract.
+
+## Learnings
+
+- Embeddings created by different models belong to different vector spaces and should not be compared directly.
+- `frozen=True` does not make a nested `list` immutable.
+- `tuple[float, ...]` represents an immutable sequence containing any number of floats.
+- Chunk identity and chunk content version are different concepts.
+- Batch processing reduces the number of calls to an embedding model.
+- A smoke test verifies that a real integration starts and produces a minimally valid result.
+- Sentence Transformers returns NumPy vectors, which are converted at the adapter boundary into plain Python floats.
+
+## Questions
+
+- Should domain models validate their own invariants using `__post_init__`?
+- Which embedding implementation should be used first?
+- Where should compatibility of vector dimensions be validated?
+
+---
+
 # Principles
 
 - Form a hypothesis before looking up the answer.

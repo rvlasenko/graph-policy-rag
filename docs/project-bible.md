@@ -233,6 +233,102 @@ It provides local batch inference without coupling the application to a paid ext
 
 ---
 
+# Day 5 — Vector Store
+
+## Decisions
+
+### Decision 17
+
+`VectorStore` stores embeddings but does not own chunk text.
+
+**Why**
+
+Vector search and chunk storage have different responsibilities. Search results can be resolved to domain chunks through a separate repository.
+
+---
+
+### Decision 18
+
+Vector search returns `chunk_id` and similarity `score`, but not the stored vector.
+
+**Why**
+
+The caller needs the chunk identity and relevance score. Returning the full vector would expose unnecessary storage details.
+
+---
+
+### Decision 19
+
+`VectorStore` uses `upsert` instead of append-only `add`.
+
+**Why**
+
+Repeated ingestion and document updates must replace existing embeddings instead of creating duplicate search results for the same chunk.
+
+---
+
+## Decision 20
+
+`VectorStore` has an explicit vector dimension.
+
+**Why**
+
+All vectors stored in one index must have the same dimension. Explicitly configuring the dimension allows incompatible embeddings to be rejected during `upsert` instead of failing later during search.
+
+---
+
+## Decision 21
+
+`InMemoryVectorStore.upsert` validates the entire batch before modifying stored embeddings.
+
+**Why**
+
+Batch upsert should be atomic from the caller's perspective. If any embedding has an incompatible model, wrong vector dimension or zero vector, the whole operation is rejected and the store remains unchanged.
+
+---
+
+## Decision 22
+
+`VectorStore` rejects zero vectors.
+
+**Why**
+
+Cosine similarity is undefined for a zero vector because its norm is zero. Rejecting zero vectors at the store boundary prevents invalid data from being persisted and avoids delayed failures during search.
+
+---
+
+## Decision 23
+
+`VectorStore.search` validates the query embedding before calculating similarity.
+
+The query must:
+
+* use the same embedding model as the store;
+* have the configured vector dimension;
+* not be a zero vector.
+
+**Why**
+
+Input validation should happen at the public method boundary. This produces earlier and clearer errors instead of relying on failures inside the cosine similarity implementation.
+
+## Learnings
+
+* A vector index has a fixed embedding model and vector dimension.
+* Embeddings created by different models or with different dimensions cannot be compared meaningfully.
+* A zero vector has zero norm, so cosine similarity cannot be calculated.
+* Batch validation must finish before any writes occur to preserve atomicity.
+* A component should reject data that would leave it in a state it cannot process correctly later.
+* Validation at a public method boundary gives clearer errors than accidental failures inside lower-level calculations.
+
+## Questions
+
+* Should validation of `NaN` and infinite vector values happen in `ChunkEmbedding`, the embedding adapter or `VectorStore`?
+* Should vector validation remain inside `InMemoryVectorStore` or later become shared logic for all vector store adapters?
+* Should invalid vector data use dedicated exception types instead of `ValueError`?
+
+
+---
+
 # Principles
 
 - Form a hypothesis before looking up the answer.

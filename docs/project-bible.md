@@ -326,6 +326,91 @@ Input validation should happen at the public method boundary. This produces earl
 * Should vector validation remain inside `InMemoryVectorStore` or later become shared logic for all vector store adapters?
 * Should invalid vector data use dedicated exception types instead of `ValueError`?
 
+---
+
+# Day 6 — Query Pipeline
+
+## Decisions
+
+### Decision 24
+
+`QueryRequest` is an internal application contract.
+
+**Why**
+
+HTTP, CLI and other adapters should convert external input into the same application-level request. This keeps query execution independent from the transport layer.
+
+---
+
+### Decision 25
+
+`Retriever` accepts query text and returns application-level `RetrievalHit` objects.
+
+**Why**
+
+The retriever hides retrieval implementation details such as query embedding, vector search, keyword search, graph expansion and reranking.
+
+`QueryPipeline` should depend on the retrieval capability rather than directly coordinating a specific vector store.
+
+---
+
+### Decision 26
+
+`RetrievalHit` is separate from `VectorSearchResult`.
+
+**Why**
+
+`VectorSearchResult` is the contract of the vector store, while `RetrievalHit` is the application retrieval contract.
+
+This allows the retrieval implementation to evolve from vector-only search to hybrid or graph-based retrieval without changing the query pipeline.
+
+## Learnings
+
+- A retriever converts a user query into relevant knowledge candidates.
+- A vector store is one possible implementation detail inside a retriever.
+- Application contracts should not expose infrastructure-specific result types.
+- Ports describe capabilities required by the application.
+- Adapters implement those capabilities using concrete technologies.
+
+## Questions
+
+- Should `Retriever` return `Sequence[RetrievalHit]` or `list[RetrievalHit]`?
+- Which component should resolve `chunk_id` into chunk text and document metadata?
+- Should query embedding happen inside the retriever or in a separate query-embedding port?
+
+---
+
+### Decision 27
+
+Chunk content is stored separately from vector embeddings.
+
+**Why**
+
+The vector store is responsible for similarity search and returns chunk identifiers with scores.
+
+A separate `ChunkRepository` resolves chunk identifiers into domain `Chunk` objects. This prevents the retrieval application from depending on vector-store-specific payload storage.
+
+### Decision 28
+
+`ChunkRepository.get` returns `Chunk | None`.
+
+**Why**
+
+Vector and chunk storage can become temporarily inconsistent. The caller should explicitly decide how to handle a missing chunk instead of receiving an accidental low-level lookup error.
+
+---
+
+### Decision 29
+
+Chunk storage is represented by the `ChunkRepository` port.
+
+The repository supports both storing chunks and resolving a chunk by identifier.
+
+**Why**
+
+Vector storage contains embeddings used for similarity search, while chunk storage contains the original domain objects required for context assembly and citations.
+
+Both stores are updated during ingestion.
 
 ---
 

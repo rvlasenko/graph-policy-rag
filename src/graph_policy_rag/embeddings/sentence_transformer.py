@@ -8,6 +8,10 @@ class SentenceTransformerEmbeddingModel:
         self.model_name = model_name
         self._model = SentenceTransformer(model_name)
 
+    @property
+    def vector_dimension(self) -> int:
+        return 384
+
     def embed_texts(
         self,
         texts: Sequence[str],

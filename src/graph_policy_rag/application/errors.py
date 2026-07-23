@@ -1,0 +1,2 @@
+class EmptyRetrievalError(Exception):
+    pass

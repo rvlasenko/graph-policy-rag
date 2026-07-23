@@ -3,7 +3,11 @@ from typing import Protocol
 
 
 class EmbeddingModel(Protocol):
-    model_name: str
+    @property
+    def model_name(self) -> str: ...
+
+    @property
+    def vector_dimension(self) -> int: ...
 
     def embed_texts(
         self,

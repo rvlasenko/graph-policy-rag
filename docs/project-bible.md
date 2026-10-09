@@ -414,6 +414,18 @@ Both stores are updated during ingestion.
 
 ---
 
+### Decision 30
+
+Re-ingesting a document removes its stale chunks from both the chunk repository and the vector store.
+
+**Why**
+
+Chunk ids are derived from the document id and the chunk position. When a document becomes shorter, `upsert` replaces the remaining positions but leaves the old trailing chunks in place, and those keep appearing in search results. Ingestion compares the chunks currently stored for the document with the newly produced ones and deletes the difference.
+
+New data is written before stale data is deleted, so a failed delete leaves extra results rather than missing ones. The two stores are not updated transactionally; the context assembler tolerates a hit whose chunk is missing (Decision 28).
+
+---
+
 # Principles
 
 - Form a hypothesis before looking up the answer.

@@ -13,3 +13,14 @@ class InMemoryChunkRepository:
 
     def get(self, chunk_id: str) -> Chunk | None:
         return self._chunks.get(chunk_id)
+
+    def list_by_document(self, document_id: str) -> list[Chunk]:
+        return [
+            chunk
+            for chunk in self._chunks.values()
+            if chunk.document_id == document_id
+        ]
+
+    def delete(self, chunk_ids: Sequence[str]) -> None:
+        for chunk_id in chunk_ids:
+            self._chunks.pop(chunk_id, None)

@@ -12,6 +12,11 @@ class VectorStore(Protocol):
         embeddings: Sequence[ChunkEmbedding],
     ) -> None: ...
 
+    def delete(
+        self,
+        chunk_ids: Sequence[str],
+    ) -> None: ...
+
     def search(
         self,
         query_embedding: QueryEmbedding,

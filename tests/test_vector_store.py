@@ -370,3 +370,38 @@ def test_rejects_non_positive_vector_dimension():
             model_name="test-model",
             vector_dimension=0,
         )
+
+
+def test_delete_removes_embeddings_from_search_results():
+    store = InMemoryVectorStore(
+        model_name="test-model",
+        vector_dimension=2,
+    )
+    store.upsert(
+        [
+            ChunkEmbedding(
+                chunk_id="chunk-1",
+                chunk_version="version-1",
+                vector=(1.0, 0.0),
+                model="test-model",
+            ),
+            ChunkEmbedding(
+                chunk_id="chunk-2",
+                chunk_version="version-1",
+                vector=(0.0, 1.0),
+                model="test-model",
+            ),
+        ]
+    )
+
+    store.delete(["chunk-1", "missing-chunk"])
+
+    results = store.search(
+        query_embedding=QueryEmbedding(
+            vector=(1.0, 0.0),
+            model="test-model",
+        ),
+        top_k=10,
+    )
+
+    assert [result.chunk_id for result in results] == ["chunk-2"]

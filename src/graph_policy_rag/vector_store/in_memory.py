@@ -64,6 +64,13 @@ class InMemoryVectorStore:
         for embedding in embeddings:
             self._embeddings[embedding.chunk_id] = embedding
 
+    def delete(
+        self,
+        chunk_ids: Sequence[str],
+    ) -> None:
+        for chunk_id in chunk_ids:
+            self._embeddings.pop(chunk_id, None)
+
     def search(
         self,
         query_embedding: QueryEmbedding,
